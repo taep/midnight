@@ -11,21 +11,22 @@ import { CameraEvent } from '@/lib/simulation/types';
 const GRID_W = 35;
 const GRID_H = 25;
 
-function getStatusLabel(gs: string | undefined): { text: string; className: string } {
+function getStatusLabel(gs: string | undefined): { text: string; icon: string } {
   switch (gs) {
-    case 'LOBBY': return { text: 'STANDBY', className: 'bg-slate-900/50 border-slate-600 text-slate-400' };
-    case 'PRE_GAME': return { text: 'FREE TIME', className: 'bg-yellow-900/50 border-yellow-600 text-yellow-300 animate-pulse' };
-    case 'GAME_INTRO': return { text: 'ANNOUNCEMENT', className: 'bg-amber-900/50 border-amber-500 text-amber-200 animate-pulse' };
-    case 'GAME_COUNTDOWN': return { text: 'COUNTDOWN', className: 'bg-red-900/50 border-red-500 text-red-200 animate-pulse' };
-    case 'ROUND_ACTIVE': return { text: 'ZOMBIE OUTBREAK', className: 'bg-red-900/50 border-red-500 text-red-200 animate-pulse' };
-    case 'ROUND_RESULT': return { text: 'RESULTS', className: 'bg-purple-900/50 border-purple-500 text-purple-200' };
-    case 'GAME_OVER': return { text: 'TERMINATED', className: 'bg-gray-900/50 border-gray-600 text-gray-400' };
-    default: return { text: 'STANDBY', className: 'bg-slate-900/50 border-slate-600 text-slate-400' };
+    case 'LOBBY': return { text: 'STANDBY', icon: '◆' };
+    case 'PRE_GAME': return { text: 'PREPARATION', icon: '◈' };
+    case 'GAME_INTRO': return { text: 'BRIEFING', icon: '▣' };
+    case 'GAME_COUNTDOWN': return { text: 'COMMENCING', icon: '▶' };
+    case 'ROUND_ACTIVE': return { text: 'LIVE', icon: '●' };
+    case 'ROUND_RESULT': return { text: 'SETTLEMENT', icon: '◇' };
+    case 'GAME_OVER': return { text: 'CONCLUDED', icon: '■' };
+    default: return { text: 'STANDBY', icon: '◆' };
   }
 }
 
 export default function Home() {
   const worldRef = useRef<World | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const [tick, setTick] = useState(0);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
@@ -58,6 +59,21 @@ export default function Home() {
     return () => clearTimeout(timeoutId);
   }, []);
 
+  // Force-reset any scroll drift every tick
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+      // Also reset all scrollable children
+      mainRef.current.querySelectorAll('*').forEach(el => {
+        if (el.scrollTop > 0 && !el.classList.contains('overflow-y-auto')) {
+          (el as HTMLElement).scrollTop = 0;
+        }
+      });
+    }
+  });
+
   const handleSpawn = (gender: 'MALE' | 'FEMALE') => {
     worldRef.current?.spawnAgent(gender);
     setTick(t => t + 1);
@@ -66,7 +82,6 @@ export default function Home() {
   const handleSaveKey = () => {
     LLMService.setApiKey(apiKey);
     setShowSettings(false);
-    alert('API Key가 저장되었습니다. 에이전트들이 곧 대화를 시작합니다!');
   };
 
   const currentAgents = worldRef.current?.agents || [];
@@ -74,6 +89,9 @@ export default function Home() {
   const gameState = worldRef.current?.gameState || 'LOBBY';
   const selectedAgent = currentAgents.find(a => a.id === selectedAgentId);
   const status = getStatusLabel(gameState);
+  const aliveCount = currentAgents.filter(a => a.status === 'ALIVE').length;
+  const deadCount = currentAgents.filter(a => a.status !== 'ALIVE').length;
+  const isLive = gameState === 'ROUND_ACTIVE';
 
   // Alliance info for selected agent
   const selectedAlliance = selectedAgent?.allianceId
@@ -81,183 +99,191 @@ export default function Home() {
     : null;
 
   return (
-    <main className="min-h-screen bg-black text-gray-200 p-4 lg:p-8 font-sans">
-      <header className="mb-4 lg:mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-            MIDNIGHT STATION
-          </h1>
-          <p className="text-gray-500 text-sm">Autonomous Agent Observation Terminal</p>
-        </div>
-        <div className="flex gap-4 items-center">
-          <div className={`px-4 py-2 border rounded font-mono font-bold text-sm ${status.className}`}>
-            {status.text}
-          </div>
-          {gameState !== 'LOBBY' && (
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-500"
-            >
-              RESTART
-            </button>
-          )}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="px-4 py-2 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors"
-          >
-            SETTINGS
-          </button>
-        </div>
-      </header>
-
+    <main ref={mainRef} className="h-screen bg-[#050508] text-gray-200 flex flex-col overflow-hidden">
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 w-96 shadow-2xl">
-            <h2 className="text-xl font-bold mb-4 text-white">System Configuration</h2>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-[#0a0a0f] p-6 rounded-lg vip-border-strong w-96 vip-corner">
+            <h2 className="text-lg font-bold mb-4 vip-text tracking-wider">SYSTEM CONFIG</h2>
             <div className="mb-4">
-              <label className="block text-sm text-slate-400 mb-2">OpenAI API Key</label>
+              <label className="block text-xs text-[#8a7235] mb-2 tracking-wider">OPENAI API KEY</label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="sk-..."
-                className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-black border border-[#2a2520] rounded p-2 text-white text-sm focus:outline-none focus:border-[#c9a84c]/50"
               />
-              <p className="text-xs text-slate-500 mt-2">
-                키가 없으면 랜덤 대사로 작동합니다.<br />
-                (Keys are not stored persistently)
+              <p className="text-xs text-[#4a4035] mt-2">
+                API Key 미입력 시 랜덤 대사로 작동합니다.
               </p>
             </div>
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowSettings(false)}
-                className="px-4 py-2 text-slate-400 hover:text-white"
-              >
+              <button onClick={() => setShowSettings(false)} className="px-4 py-2 text-[#555] hover:text-white text-sm">
                 Cancel
               </button>
-              <button
-                onClick={handleSaveKey}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500"
-              >
-                Save Configuration
+              <button onClick={handleSaveKey} className="px-4 py-2 bg-[#1a1810] border border-[#c9a84c]/30 text-[#c9a84c] rounded text-sm hover:bg-[#2a2520]">
+                Confirm
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 max-w-[1600px] mx-auto h-[85vh]">
+      {/* === MAIN LAYOUT: TV + Sidebar === */}
+      <div className="flex flex-1 min-h-0 gap-8 overflow-hidden" style={{ padding: '5vh 6vw' }}>
 
-        {/* Left Col: Canvas */}
-        <div className="lg:col-span-3 space-y-4 flex flex-col h-full">
-          <div className="bg-gray-900/50 p-1 rounded-xl border border-gray-800 flex-1 overflow-hidden relative">
-            <div className="w-full h-full flex items-center justify-center bg-[#0f172a]">
-              <WorldCanvas
-                agents={currentAgents}
-                width={GRID_W}
-                height={GRID_H}
-                onAgentClick={setSelectedAgentId}
-                trigger={tick}
-                gameState={gameState}
-                announcement={worldRef.current?.currentAnnouncement || null}
-                cameraEvents={cameraEvents}
-              />
+        {/* ===== TV MONITOR (main area) ===== */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="tv-frame flex-1 flex flex-col overflow-hidden">
+            {/* Top bezel: branding + status */}
+            <div className="flex items-center justify-between px-4 py-1.5 bg-[#0e0e0e] border-b border-[#1a1a1a] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className={`tv-led ${isLive ? 'bg-red-500 text-red-500' : 'bg-emerald-700 text-emerald-700'}`} />
+                <span className="text-[9px] font-mono tracking-[0.3em] text-[#444]">
+                  MIDNIGHT STATION
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className={`text-[9px] font-mono tracking-wider ${isLive ? 'text-red-500/70' : 'text-[#333]'}`}>
+                  {status.icon} {status.text}
+                </span>
+                <span className="text-[9px] font-mono text-[#2a2a2a]">CH-01</span>
+              </div>
             </div>
-          </div>
 
-          {/* Quick Controls */}
-          <div className="p-3 bg-gray-900 border border-gray-800 rounded-lg flex justify-between items-center">
-            <div className="flex gap-4 text-xs font-bold text-gray-400">
-              <span>TOTAL: {currentAgents.length}</span>
-              <span className="text-green-500">ALIVE: {currentAgents.filter(a => a.status === 'ALIVE').length}</span>
-              <span className="text-red-500">DEAD: {currentAgents.filter(a => a.status !== 'ALIVE').length}</span>
-              <span className="text-cyan-400">TEAMS: {worldRef.current?.alliances.length || 0}</span>
-              <span className={LLMService.isDisabled() ? 'text-red-400' : LLMService.hasKey() ? 'text-emerald-400' : 'text-gray-600'}>
-                LLM: {LLMService.isDisabled() ? 'QUOTA EXCEEDED' : LLMService.hasKey() ? 'ON' : 'OFF'}
-              </span>
+            {/* Screen */}
+            <div className="tv-screen flex-1 relative min-h-0 overflow-hidden bg-[#060610]">
+                <WorldCanvas
+                  agents={currentAgents}
+                  width={GRID_W}
+                  height={GRID_H}
+                  onAgentClick={setSelectedAgentId}
+                  trigger={tick}
+                  gameState={gameState}
+                  announcement={worldRef.current?.currentAnnouncement || null}
+                  cameraEvents={cameraEvents}
+                />
+              {/* TV overlays */}
+              <div className="tv-glare" />
+              <div className="tv-noise" />
+              {/* OSD top-left */}
+              <div className="absolute top-3 left-4 z-10 flex items-center gap-2">
+                {isLive && <div className="w-1.5 h-1.5 rounded-full bg-red-500 vip-pulse" />}
+                <span className="text-[9px] font-mono tracking-widest text-[#3a3a3a]" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                  {isLive ? 'REC' : 'CAM-01'}
+                </span>
+              </div>
+              {/* OSD top-right */}
+              <div className="absolute top-3 right-4 z-10">
+                <span suppressHydrationWarning className="text-[9px] font-mono text-[#3a3a3a]" style={{ textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              </div>
             </div>
-            {gameState === 'LOBBY' && (
-              <div className="flex gap-2">
+
+            {/* Bottom bezel: stats + controls */}
+            <div className="flex items-center justify-between px-4 py-1.5 bg-[#0e0e0e] border-t border-[#1a1a1a] shrink-0">
+              <div className="flex gap-4 text-[9px] font-mono tracking-wider">
+                <span className="text-[#444]">SUBJ <span className="text-[#8a7235]">{currentAgents.length}</span></span>
+                <span className="text-[#444]">ALIVE <span className="text-emerald-600">{aliveCount}</span></span>
+                <span className="text-[#444]">DEAD <span className="text-red-800">{deadCount}</span></span>
+                <span className="text-[#444]">TEAM <span className="text-[#8a7235]">{worldRef.current?.alliances.length || 0}</span></span>
+              </div>
+              <div className="flex items-center gap-3">
+                {gameState === 'LOBBY' && (
+                  <>
+                    <button
+                      onClick={() => handleSpawn('MALE')}
+                      className="px-2 py-0.5 text-[9px] font-mono text-blue-400/50 hover:text-blue-300 transition-colors"
+                    >
+                      [+M]
+                    </button>
+                    <button
+                      onClick={() => handleSpawn('FEMALE')}
+                      className="px-2 py-0.5 text-[9px] font-mono text-pink-400/50 hover:text-pink-300 transition-colors"
+                    >
+                      [+F]
+                    </button>
+                  </>
+                )}
+                {gameState !== 'LOBBY' && (
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-2 py-0.5 text-[9px] font-mono text-red-600/40 hover:text-red-400 transition-colors"
+                  >
+                    [RESET]
+                  </button>
+                )}
                 <button
-                  onClick={() => handleSpawn('MALE')}
-                  className="px-3 py-1 bg-blue-900/40 border border-blue-800 text-blue-300 rounded text-xs hover:bg-blue-800/60 transition-colors"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="px-2 py-0.5 text-[9px] font-mono text-[#333] hover:text-[#8a7235] transition-colors"
                 >
-                  + 남성 투입
-                </button>
-                <button
-                  onClick={() => handleSpawn('FEMALE')}
-                  className="px-3 py-1 bg-pink-900/40 border border-pink-800 text-pink-300 rounded text-xs hover:bg-pink-800/60 transition-colors"
-                >
-                  + 여성 투입
+                  [CFG]
                 </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Right Col: Info & Logs */}
-        <div className="lg:col-span-1 space-y-4 flex flex-col h-full">
+        {/* ===== RIGHT SIDEBAR ===== */}
+        <div className="w-[320px] shrink-0 flex flex-col gap-3 min-h-0 overflow-hidden">
 
-          {/* Agent Detail */}
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 min-h-[200px]">
-            <h3 className="text-gray-400 mb-4 uppercase tracking-wider text-xs font-bold">Target Analysis</h3>
+          {/* Subject Dossier (compact) */}
+          <div className="bg-[#0a0a0f] vip-border rounded-lg p-3 shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-0.5 h-2.5 bg-[#8a7235] rounded-full" />
+              <span className="text-[9px] font-mono tracking-[0.2em] text-[#8a7235]">SUBJECT DOSSIER</span>
+            </div>
             {selectedAgent ? (
               <div className="space-y-2">
-                <div className="text-xl font-bold flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAgent.color }} />
-                  {selectedAgent.name}
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm border" style={{ backgroundColor: selectedAgent.color + '40', borderColor: selectedAgent.color }} />
+                  <span className="text-sm font-bold text-white">{selectedAgent.name}</span>
+                  <span className="text-[9px] text-[#333] font-mono ml-auto">{selectedAgent.id.slice(0, 8)}</span>
                 </div>
-                <div className="text-sm text-gray-500 font-mono">ID: {selectedAgent.id}</div>
-                <div className="grid grid-cols-2 gap-2 mt-4 text-sm">
-                  <div className="bg-gray-950 p-2 rounded">
-                    <div className="text-gray-600 text-xs">STATE</div>
-                    <div className={`${selectedAgent.state === 'FIGHTING' ? 'text-red-400 font-bold' :
-                      selectedAgent.state === 'TALKING' ? 'text-blue-400' :
-                        'text-gray-300'
-                      }`}>
-                      {selectedAgent.state}
-                    </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  <div className="bg-black/50 px-2 py-1.5 rounded border border-[#1a1a20] text-center">
+                    <div className="text-[7px] text-[#4a4035] font-mono">STATE</div>
+                    <div className={`text-[10px] font-bold ${
+                      selectedAgent.state === 'FIGHTING' ? 'text-red-400' :
+                      selectedAgent.state === 'TALKING' ? 'text-blue-400' : 'text-[#8a7235]'
+                    }`}>{selectedAgent.state}</div>
                   </div>
-                  <div className="bg-gray-950 p-2 rounded">
-                    <div className="text-gray-600 text-xs">ROLE</div>
-                    <div className={selectedAgent.role === 'ZOMBIE' ? 'text-red-400 font-bold' : 'text-green-400'}>
+                  <div className="bg-black/50 px-2 py-1.5 rounded border border-[#1a1a20] text-center">
+                    <div className="text-[7px] text-[#4a4035] font-mono">ROLE</div>
+                    <div className={`text-[10px] font-bold ${selectedAgent.role === 'ZOMBIE' ? 'text-red-500' : 'text-emerald-500'}`}>
                       {selectedAgent.role}
                     </div>
                   </div>
-                  <div className="bg-gray-950 p-2 rounded">
-                    <div className="text-gray-600 text-xs">ENERGY</div>
-                    <div className="text-yellow-500">{Math.floor(selectedAgent.stats.energy)}%</div>
+                  <div className="bg-black/50 px-2 py-1.5 rounded border border-[#1a1a20] text-center">
+                    <div className="text-[7px] text-[#4a4035] font-mono">HP</div>
+                    <div className="text-[10px] font-bold text-amber-500">{Math.floor(selectedAgent.stats.energy)}%</div>
                   </div>
-                  <div className="bg-gray-950 p-2 rounded">
-                    <div className="text-gray-600 text-xs">STATUS</div>
-                    <div className={selectedAgent.status === 'ALIVE' ? 'text-green-400' : 'text-red-400'}>
-                      {selectedAgent.status}
+                  <div className="bg-black/50 px-2 py-1.5 rounded border border-[#1a1a20] text-center">
+                    <div className="text-[7px] text-[#4a4035] font-mono">STATUS</div>
+                    <div className={`text-[10px] font-bold ${selectedAgent.status === 'ALIVE' ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {selectedAgent.status === 'ALIVE' ? 'ALIVE' : 'DEAD'}
                     </div>
                   </div>
                 </div>
-                {/* Alliance Info */}
                 {selectedAlliance && (
-                  <div className="mt-3 p-2 rounded border" style={{ borderColor: selectedAlliance.color + '80', backgroundColor: selectedAlliance.color + '15' }}>
-                    <div className="text-xs text-gray-500 mb-1">ALLIANCE</div>
-                    <div className="font-bold text-sm" style={{ color: selectedAlliance.color }}>
-                      {selectedAlliance.name}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Members: {selectedAlliance.memberIds.length}
-                    </div>
+                  <div className="flex items-center gap-2 px-2 py-1 rounded bg-black/30 border border-[#1a1a20]">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedAlliance.color }} />
+                    <span className="text-[10px] font-bold" style={{ color: selectedAlliance.color }}>{selectedAlliance.name}</span>
+                    <span className="text-[9px] text-[#333] font-mono ml-auto">{selectedAlliance.memberIds.length}명</span>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-gray-600 italic mt-8 text-center">
-                Select a target on the grid to monitor.
+              <div className="text-[#2a2520] text-center py-3">
+                <span className="text-[9px] font-mono tracking-wider">SELECT A SUBJECT</span>
               </div>
             )}
           </div>
 
-          {/* Logs */}
-          <div className="flex-1 min-h-0">
+          {/* Intelligence Feed (fills rest) */}
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ActivityLog logs={currentLogs} />
           </div>
         </div>

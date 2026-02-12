@@ -8,29 +8,66 @@ interface ActivityLogProps {
 
 function getLogStyle(type: string) {
     switch (type) {
-        case 'FIGHT': return { badge: 'bg-red-900/50 text-red-400', box: 'bg-red-950/20 border-red-900/30 text-red-200', name: 'text-red-300' };
-        case 'TALK': return { badge: 'bg-blue-900/50 text-blue-400', box: 'bg-blue-950/20 border-blue-900/30 text-slate-200', name: 'text-blue-300' };
-        case 'ALLIANCE': return { badge: 'bg-cyan-900/50 text-cyan-400', box: 'bg-cyan-950/20 border-cyan-900/30 text-cyan-200', name: 'text-cyan-300' };
-        default: return { badge: 'bg-slate-800 text-slate-400', box: 'bg-slate-800/50 border-slate-700/50 text-slate-400', name: 'text-slate-300' };
+        case 'FIGHT': return {
+            badge: 'bg-red-950/60 text-red-500 border border-red-900/30',
+            box: 'border-l-2 border-l-red-800/50 bg-[#0f0808]',
+            name: 'text-red-400',
+            icon: '✕',
+        };
+        case 'TALK': return {
+            badge: 'bg-blue-950/40 text-blue-400/80 border border-blue-900/20',
+            box: 'border-l-2 border-l-blue-900/40 bg-[#08080f]',
+            name: 'text-blue-300/80',
+            icon: '◈',
+        };
+        case 'ALLIANCE': return {
+            badge: 'bg-cyan-950/40 text-cyan-400/80 border border-cyan-900/20',
+            box: 'border-l-2 border-l-cyan-800/40 bg-[#080f0f]',
+            name: 'text-cyan-300/80',
+            icon: '◆',
+        };
+        default: return {
+            badge: 'bg-[#12100a] text-[#8a7235] border border-[#2a2520]',
+            box: 'border-l-2 border-l-[#2a2520] bg-[#0a0a08]',
+            name: 'text-[#c9a84c]',
+            icon: '▸',
+        };
+    }
+}
+
+function getLogLabel(type: string) {
+    switch (type) {
+        case 'FIGHT': return 'INCIDENT';
+        case 'TALK': return 'INTERCEPT';
+        case 'ALLIANCE': return 'FACTION';
+        default: return 'SYSTEM';
     }
 }
 
 export default function ActivityLog({ logs }: ActivityLogProps) {
     return (
-        <div className="h-full flex flex-col bg-slate-900/80 border border-slate-800 rounded-lg overflow-hidden backdrop-blur-sm">
-            <div className="p-3 border-b border-slate-800 bg-slate-900">
-                <h3 className="text-sm font-bold text-slate-300 flex justify-between items-center">
-                    <span>LIVE LOGS</span>
-                    <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">
-                        {logs.length} events
+        <div className="h-full flex flex-col bg-[#0a0a0f] vip-border rounded-lg overflow-hidden">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-[#1a1815] bg-[#0c0b08]">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1 h-3 bg-[#8a7235] rounded-full" />
+                        <span className="text-[10px] font-mono tracking-[0.25em] text-[#8a7235]">INTELLIGENCE FEED</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-[#3a3530] bg-[#0f0e0a] px-2 py-0.5 rounded border border-[#1a1815]">
+                        {logs.length}
                     </span>
-                </h3>
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Feed */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {logs.length === 0 && (
-                    <div className="text-center text-slate-600 mt-10 text-sm">
-                        System initialized. Waiting for agent activity...
+                    <div className="text-center mt-12">
+                        <div className="text-[#2a2520] text-lg mb-2">◇</div>
+                        <div className="text-[10px] font-mono tracking-wider text-[#2a2520]">
+                            AWAITING SIGNAL...
+                        </div>
                     </div>
                 )}
 
@@ -39,30 +76,30 @@ export default function ActivityLog({ logs }: ActivityLogProps) {
                     const author = parts.length > 1 ? parts[0] : null;
                     const content = parts.length > 1 ? parts.slice(1).join(':') : log.message;
                     const style = getLogStyle(log.type);
+                    const label = getLogLabel(log.type);
 
                     return (
-                        <div key={log.id} className="flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="flex items-base gap-2">
-                                <span className="text-[10px] text-slate-500 font-mono pt-1">
+                        <div key={log.id} className={`log-enter rounded px-3 py-2.5 ${style.box}`}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono tracking-wider ${style.badge}`}>
+                                    {label}
+                                </span>
+                                <span suppressHydrationWarning className="text-[9px] text-[#2a2520] font-mono ml-auto">
                                     {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </span>
-                                <span className={`text-[10px] px-1 rounded font-bold uppercase ${style.badge}`}>
-                                    {log.type}
-                                </span>
                             </div>
-
-                            <div className={`text-sm p-3 rounded-md border ${style.box}`}>
+                            <div className="text-xs leading-relaxed">
                                 {author ? (
                                     <>
                                         <span className={`${style.name} font-bold`}>
                                             {author}
                                         </span>
-                                        <span className={log.type === 'TALK' ? 'text-slate-300' : 'text-slate-400'}>
-                                            : {content}
+                                        <span className="text-[#6a6560]">
+                                            :{content}
                                         </span>
                                     </>
                                 ) : (
-                                    content
+                                    <span className="text-[#6a6560]">{content}</span>
                                 )}
                             </div>
                         </div>

@@ -396,8 +396,7 @@ export default function WorldCanvas({ agents, width, height, onAgentClick, trigg
         <canvas
             ref={canvasRef}
             onClick={handleClick}
-            className="border border-gray-700 shadow-2xl rounded-lg cursor-crosshair"
-            style={{ maxWidth: '100%', height: 'auto' }}
+            className="absolute inset-0 block w-full h-full cursor-crosshair"
         />
     );
 }
