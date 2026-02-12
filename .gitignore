@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code
+.claude/
+
+# test/debug scripts
+list-models.js
+test-llm.js
+
+# windows artifacts
+nul

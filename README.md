@@ -1,36 +1,146 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+```
+ ███╗   ███╗██╗██████╗ ███╗   ██╗██╗ ██████╗ ██╗  ██╗████████╗
+ ████╗ ████║██║██╔══██╗████╗  ██║██║██╔════╝ ██║  ██║╚══██╔══╝
+ ██╔████╔██║██║██║  ██║██╔██╗ ██║██║██║  ███╗███████║   ██║
+ ██║╚██╔╝██║██║██║  ██║██║╚██╗██║██║██║   ██║██╔══██║   ██║
+ ██║ ╚═╝ ██║██║██████╔╝██║ ╚████║██║╚██████╔╝██║  ██║   ██║
+ ╚═╝     ╚═╝╚═╝╚═════╝ ╚═╝  ╚═══╝╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝
+ ███████╗████████╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
+ ██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
+ ███████╗   ██║   ███████║   ██║   ██║██║   ██║██╔██╗ ██║
+ ╚════██║   ██║   ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
+ ███████║   ██║   ██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
+ ╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+```
+
+> **24명의 AI 에이전트가 자율적으로 생존 게임을 플레이하는 실시간 시뮬레이션**
+
+인간의 개입 없이, AI 에이전트들이 스스로 팀을 짜고, 전략을 세우고, 좀비 서바이벌 게임에서 살아남기 위해 발버둥칩니다. 각자의 성격과 판단으로 행동하는 에이전트들의 극적인 생존기를 관찰하세요.
+
+---
+
+## Features
+
+### 🤖 자율 에이전트 시스템
+- 7가지 성격 유형 (리더, 전략가, 겁쟁이, 모험가, 외톨이, 사교적, 보호자)
+- 성격에 기반한 자율적 의사결정 및 대화
+- 상황 인식 독백 & 팀원 간 커뮤니케이션
+
+### 🎮 오징어 게임 스타일 진행
+- 7단계 게임 스테이트 머신 (LOBBY → PRE_GAME → GAME_INTRO → COUNTDOWN → ROUND → RESULT → GAME OVER)
+- 좀비 서바이벌 라운드 — 좀비에게 잡히면 감염
+- 드라마틱한 시스템 안내 방송 큐
+
+### 👥 동맹 시스템
+- 에이전트들이 자율적으로 팀을 형성
+- 팀원 간 위험 경고, 전략 공유, 사망 반응
+- 근접 대화 시스템 (3타일 이내 대화 가능)
+
+### 🎬 시네마틱 카메라
+- 극적 장면에서 자동 줌 인/아웃
+- 화면 흔들림 (쉐이크) 효과
+- 슬로우 모션 연출
+- 감염/사망/생존 등 주요 이벤트 자동 포착
+
+### 💬 LLM 기반 대화 (선택)
+- OpenAI GPT-4o-mini 연동
+- 게임 상황 컨텍스트를 반영한 자연스러운 대화
+- API 키 없이도 랜덤 대사로 완전 작동
+
+### ⚡ 실시간 렌더링
+- HTML5 Canvas 60fps 렌더링
+- Lerp 기반 부드러운 에이전트 이동
+- 말풍선, 이모지, 상태 효과 시각화
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. 설치
+
+```bash
+git clone https://github.com/your-username/midnight-station.git
+cd midnight-station
+npm install
+```
+
+### 2. 환경 설정 (선택)
+
+LLM 대화 기능을 사용하려면 `.env.local` 파일을 생성하세요:
+
+```bash
+cp .env.example .env.local
+# .env.local 파일을 열고 OpenAI API 키를 입력
+```
+
+> API 키가 없어도 게임은 완전히 작동합니다. 랜덤 대사 풀로 대체됩니다.
+
+### 3. 실행
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000) 을 열면 시뮬레이션이 시작됩니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How to Play
 
-## Learn More
+1. **LOBBY** — 에이전트를 투입하세요 (남성/여성 버튼)
+2. **관찰** — 에이전트들이 서로 만나고, 대화하고, 팀을 형성합니다
+3. **게임 시작** — 일정 수의 에이전트가 모이면 자동으로 게임이 시작됩니다
+4. **좀비 서바이벌** — 무작위로 선정된 좀비가 다른 에이전트를 감염시킵니다
+5. **생존** — 제한 시간까지 살아남으면 승리!
 
-To learn more about Next.js, take a look at the following resources:
+그리드 위의 에이전트를 클릭하면 상세 정보를 확인할 수 있습니다.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
+| 기술 | 용도 |
+|------|------|
+| **Next.js 16** | App Router 기반 프레임워크 |
+| **React 19** | UI 컴포넌트 |
+| **TypeScript** | 타입 안전성 |
+| **HTML5 Canvas** | 60fps 게임 렌더링 |
+| **Tailwind CSS 4** | 스타일링 |
+| **OpenAI GPT-4o-mini** | 에이전트 대화 생성 (선택) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture
+
+```
+midnight-station/
+├── app/
+│   ├── page.tsx              # 메인 UI & 게임 루프
+│   ├── globals.css           # 글로벌 스타일
+│   └── api/generate/
+│       └── route.ts          # LLM 프록시 API
+├── components/
+│   ├── WorldCanvas.tsx       # Canvas 렌더러 & 카메라 시스템
+│   └── ActivityLog.tsx       # 활동 로그 패널
+├── lib/
+│   ├── simulation/
+│   │   ├── World.ts          # 게임 엔진 & 스테이트 머신
+│   │   ├── Agent.ts          # 에이전트 AI & 성격
+│   │   ├── Utils.ts          # 유틸리티 함수
+│   │   └── types.ts          # 타입 정의
+│   └── llm/
+│       └── LLMService.ts     # LLM 통신 서비스
+└── .env.example              # 환경 변수 템플릿
+```
+
+---
+
+## License
+
+MIT
+
+---
+
+<p align="center">
+  <sub>Built with curiosity. Powered by autonomous agents.</sub>
+</p>
